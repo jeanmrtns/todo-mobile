@@ -3,17 +3,51 @@ import { FlatList, Text, TextInput, TouchableOpacity, View } from "react-native"
 import { EmptyList } from "../../components/EmptyList";
 import { Logo } from "../../components/Logo";
 import { PlusIcon } from "../../components/PlusIcon";
+import { TodoItem } from "../../components/TodoItem";
+import { TodoListHeader } from "../../components/TodoListHeader";
 import { styles } from "./styles";
 
-export function Home() {
-  const [tasks, setTasks] = useState<string[]>([])
-  const [newTaskText, setNewTaskText] = useState('')
+interface Task {
+  id: string;
+  text: string;
+  done: boolean;
+}
 
-  const [isFocused, setIsFocused] = useState(false)
+export function Home() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [newTaskText, setNewTaskText] = useState('');
+
+  const [isFocused, setIsFocused] = useState(false);
 
   function handleAddNewTask() {
-    if (!newTaskText) return
-    setTasks(prevState => [...prevState, newTaskText])
+    if (!newTaskText) return;
+
+    const newTask: Task = {
+      id: new Date().toString(),
+      text: newTaskText,
+      done: false
+    };
+    setTasks(prevState => [...prevState, newTask]);
+    setNewTaskText('');
+  }
+
+  function handleDeleteTask(id: string) {
+    setTasks(prevState => {
+      return prevState.filter(task => task.id !== id);
+    })
+  }
+
+  function handleToggleDone(id: string) {
+    const taskToUpdate = tasks.find(task => task.id === id);
+
+    if (!taskToUpdate) return;
+
+    taskToUpdate.done = !taskToUpdate.done;
+
+    setTasks(prevState => {
+      return prevState.map(task => task.id === taskToUpdate.id ? taskToUpdate: task);
+    });
+
   }
 
   return (
@@ -26,6 +60,7 @@ export function Home() {
         <TextInput
           style={{...styles.input, borderColor: isFocused ? '#5E60CE': '#0D0D0D' }}
           onChangeText={setNewTaskText}
+          value={newTaskText}
           placeholder="Adicione uma nova tarefa"
           placeholderTextColor="#808080"
           onFocus={() => setIsFocused(true)}
@@ -42,26 +77,18 @@ export function Home() {
       </View>
 
       <View style={styles.list}>
-        <View style={styles.listHeader}>
-          <View style={styles.listHeaderItem}>
-            <Text style={styles.createdText}>
-              Criadas
-            </Text>
-            <Text style={styles.counter}>0</Text>
-          </View>
-
-          <View style={styles.listHeaderItem}>
-            <Text style={styles.finishedText}>
-              Concluídas
-            </Text>
-            <Text style={styles.counter}>0</Text>
-          </View>
-        </View>
+        <TodoListHeader tasks={tasks} />
 
         <FlatList
           data={tasks}
-          renderItem={task => <Text>oi</Text>}
-          keyExtractor={item => item}
+          renderItem={({item}) => (
+            <TodoItem
+              todo={item}
+              onDelete={() => handleDeleteTask(item.id)}
+              onToggle={() => handleToggleDone(item.id)}
+            />
+          )}
+          keyExtractor={(item) => item.id}
           ListEmptyComponent={() => <EmptyList />}
         />
       </View>
